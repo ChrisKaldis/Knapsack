@@ -2,23 +2,26 @@ import dimod
 import neal.sampler
 
 
-def read_data(filename: str, capacity: int) -> tuple[list, list, int]:
+def read_data(filename: str, capacity: int) -> tuple[list[int], list[int], int]:
     """Reads data from a given file and calculates the capacity of knapsack.
 
+    The file contains the value and the weight of each item in a different
+    line and they are splitted with space. 
+
     Args:
-        filename:
-        capacity:
+        filename: the path of the file that contains the values and weights.
+        capacity: knapsack's capacity.
 
     Returns:
-        tuple
+        tuple with a list of values, a list of weights and the capacity.
     """
-    costs = []
-    weights = []
+    values = list[int]()
+    weights = list[int]()
 
     with open(filename, 'r') as file:
         for line in file:
             cost, weight = map(int, line.split())
-            costs.append(cost)
+            values.append(cost)
             weights.append(weight)
 
     # In case capacity is not given, we define weight capacity to be equal 
@@ -26,31 +29,45 @@ def read_data(filename: str, capacity: int) -> tuple[list, list, int]:
     if not capacity:
         capacity = int(0.75 * sum(weights))
 
-    return costs, weights, capacity
+    return values, weights, capacity
 
-
-def build_knapsack_bqm(costs: list, weights: list, capacity: int) -> dimod.BinaryQuadraticModel:
+def build_knapsack_bqm(
+        values: list[int], weights: list[int], capacity: int
+    ) -> dimod.BinaryQuadraticModel:
     """Construct a bqm for the knapsack problem.
     
+    Creates a Binary Quadratic Model based on a QUBO formulation of a 0/1
+    knapsack problem. It is described in the README.md file.
+
     Args:
-        costs:
-        weights:
-        capacity:
+        values: List with the values of items.
+        weights: List with the weights of items.
+        capacity: Maximum weight capacity of the knapsack.
 
     Returns:
-        bqm
+        BinaryQuadraticModel representing the 0/1 knapsack problem.
+
+    Raises:
+        ValueError: If `values` and `weights` have different lengths.
     """
 
-    n = len(weights)
     Q = {}
+    n = len(weights)
+    
+    if len(values) != n:
+        raise ValueError("Values and weights must have the same length.")
 
-    penalty_weight = int(1.2*max(weights))
+    penalty_weight = int(10 * max(weights))
 
     for i in range(n):
         for j in range(i, n):
             if i == j:
-                # Diagonal terms: -v_i + P * w_i^2 - 2 * P * W * w_i
-                Q[(i, j)] = -costs[i] + penalty_weight * (weights[i]**2) - 2 * penalty_weight * capacity * weights[i]
+                # Diagonal terms: - v_i + P * w_i^2 - 2 * P * W * w_i
+                Q[(i, j)] = (
+                    - values[i] 
+                    + penalty_weight * (weights[i]**2) 
+                    - 2 * penalty_weight * capacity * weights[i]
+                )
             else:
                 # Off-diagonal terms: 2 * P * w_i * w_j
                 Q[(i, j)] = 2 * penalty_weight * weights[i] * weights[j]
@@ -69,7 +86,7 @@ def show_solution(sampleset: dimod.SampleSet, costs, weights):
         weights:
     """
 
-    #print(sampleset)
+    print(sampleset)
     
     # keep repeated samples only once
     samples = sampleset.aggregate()
@@ -101,9 +118,10 @@ def main():
     bqm = build_knapsack_bqm(costs, weights, capacity)
     
     #sampler = dimod.SimulatedAnnealingSampler()
-    sampler = neal.sampler.SimulatedAnnealingSampler()
-    
-    sampleset = sampler.sample(bqm, num_reads=10)
+    #sampler = neal.sampler.SimulatedAnnealingSampler()
+    sampler = dimod.ExactSolver()
+
+    sampleset = sampler.sample(bqm)
     show_solution(sampleset, costs, weights)
 
 
