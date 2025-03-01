@@ -1,8 +1,14 @@
 import dimod
 import neal.sampler
 
+import argparse
+import os
 
-def read_data(filename: str, capacity: int) -> tuple[list[int], list[int], int]:
+
+def read_data(
+        filename: str, 
+        capacity: int | None = None
+    ) -> tuple[list[int], list[int], int]:
     """Reads data from a given file and calculates the capacity of knapsack.
 
     The file contains the value and the weight of each item in a different
@@ -14,14 +20,28 @@ def read_data(filename: str, capacity: int) -> tuple[list[int], list[int], int]:
 
     Returns:
         tuple with a list of values, a list of weights and the capacity.
+
+    Raises:
+        FileNotFoundError: If the file does not exist.
+        ValueError: If an item doesn't have both `value` and `weight`.
     """
+    # Check if the file exists
+    if not os.path.exists(filename):
+        raise FileNotFoundError(f"The file '{filename}' does not exist.")
+
     values = list[int]()
     weights = list[int]()
 
-    with open(filename, 'r') as file:
+    # Fill the values and weights lists 
+    with open(filename, "r") as file:
         for line in file:
-            cost, weight = map(int, line.split())
-            values.append(cost)
+            parts = line.split()
+            # Check if every item is well defined.
+            if len(parts) != 2:
+                raise ValueError(f"Each line in the file must contain exactly two integers: value and weight.")
+
+            value, weight = map(int, parts)
+            values.append(value)
             weights.append(weight)
 
     # In case capacity is not given, we define weight capacity to be equal 
@@ -30,6 +50,7 @@ def read_data(filename: str, capacity: int) -> tuple[list[int], list[int], int]:
         capacity = int(0.75 * sum(weights))
 
     return values, weights, capacity
+
 
 def build_knapsack_bqm(
         values: list[int], weights: list[int], capacity: int
@@ -46,16 +67,10 @@ def build_knapsack_bqm(
 
     Returns:
         BinaryQuadraticModel representing the 0/1 knapsack problem.
-
-    Raises:
-        ValueError: If `values` and `weights` have different lengths.
     """
 
     Q = {}
     n = len(weights)
-    
-    if len(values) != n:
-        raise ValueError("Values and weights must have the same length.")
 
     penalty_weight = int(10 * max(weights))
 
@@ -86,9 +101,9 @@ def show_solution(sampleset: dimod.SampleSet, costs, weights):
         weights:
     """
 
-    print(sampleset)
+    #print(sampleset)
     
-    # keep repeated samples only once
+    # gather repeated samples
     samples = sampleset.aggregate()
     #print("after aggregate", samples)
     
@@ -107,14 +122,31 @@ def show_solution(sampleset: dimod.SampleSet, costs, weights):
         selected_costs.append(costs[i])
         selected_weights.append(weights[i])
 
-    print("items",selected_items)
-    print("costs",selected_costs)
-    print("weights",selected_weights)
+    # print("items",selected_items)
+    # print("costs",selected_costs)
+    # print("weights",selected_weights)
 
 
 def main():
 
-    costs, weights, capacity = read_data(filename = 'data/small.txt', capacity = None)
+    parser = argparse.ArgumentParser(
+        description = "Arguments for building Knapsack problem."
+    )
+    parser.add_argument(
+        "--f", 
+        type = str, 
+        default = "data/small.txt",
+        help = "path of the file with the items values and weights."
+    )
+    parser.add_argument(
+        "--c", 
+        type = int, 
+        required = False,
+        help = "the maximum weight that you can carry with the knapsack."
+    )
+    args = parser.parse_args()
+
+    costs, weights, capacity = read_data(filename = args.f, capacity = args.c)
     bqm = build_knapsack_bqm(costs, weights, capacity)
     
     #sampler = dimod.SimulatedAnnealingSampler()
