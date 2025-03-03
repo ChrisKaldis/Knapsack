@@ -6,7 +6,7 @@ import os
 
 
 def read_data(
-        filename: str, 
+        filename: str,
         capacity: int | None = None
     ) -> tuple[list[int], list[int], int]:
     """Reads data from a given file and calculates the capacity of knapsack.
@@ -79,8 +79,8 @@ def build_knapsack_bqm(
             if i == j:
                 # Diagonal terms: - v_i + P * w_i^2 - 2 * P * W * w_i
                 Q[(i, j)] = (
-                    - values[i] 
-                    + penalty_weight * (weights[i]**2) 
+                    - values[i]
+                    + penalty_weight * (weights[i]**2)
                     - 2 * penalty_weight * capacity * weights[i]
                 )
             else:
@@ -102,15 +102,12 @@ def show_solution(sampleset: dimod.SampleSet, costs, weights):
     """
 
     #print(sampleset)
-    
     # gather repeated samples
     samples = sampleset.aggregate()
     #print("after aggregate", samples)
-    
     # keep first solution
     best_solution = samples.first
     #print("best solution",best_solution)
-    
     # make a list with the answer's selected items 
     selected_items = [i for i, x in best_solution.sample.items() if x == 1]
     #print("slected items",selected_items)
@@ -133,14 +130,14 @@ def main():
         description = "Arguments for building Knapsack problem."
     )
     parser.add_argument(
-        "--f", 
-        type = str, 
+        "--f",
+        type = str,
         default = "data/small.txt",
         help = "path of the file with the items values and weights."
     )
     parser.add_argument(
-        "--c", 
-        type = int, 
+        "--c",
+        type = int,
         required = False,
         help = "the maximum weight that you can carry with the knapsack."
     )
