@@ -1,8 +1,9 @@
 import dimod
 import neal.sampler
 
-import argparse
 import os
+import argparse
+import logging
 
 
 def read_data(
@@ -38,7 +39,7 @@ def read_data(
             parts = line.split()
             # Check if every item is well defined.
             if len(parts) != 2:
-                raise ValueError(f"Each line in the file must contain exactly two integers: value and weight.")
+                raise ValueError("Each line in the file must contain exactly two integers: value and weight.")
 
             value, weight = map(int, parts)
             values.append(value)
@@ -92,40 +93,44 @@ def build_knapsack_bqm(
     return bqm
 
 
-def show_solution(sampleset: dimod.SampleSet, costs, weights):
+def show_solution(
+    sampleset: dimod.SampleSet,
+    values: list[int],
+    weights: list[int]
+    ) -> None:
     """It prints the selected items and infos about the answer.
 
     Args:
-        sampleset:
-        costs:
-        weights:
+        sampleset: Samples returned by a dimod sampler.
+        values: List with the values of items.
+        weights: List with the weights of items.
     """
 
-    #print(sampleset)
-    # gather repeated samples
+    # gather repeated samples together and create a new SampleSet.
     samples = sampleset.aggregate()
-    #print("after aggregate", samples)
-    # keep first solution
-    best_solution = samples.first
-    #print("best solution",best_solution)
+    # keep the lowest energy sample as solution.
+    solution = samples.first
     # make a list with the answer's selected items 
-    selected_items = [i for i, x in best_solution.sample.items() if x == 1]
-    #print("slected items",selected_items)
+    selected_items = [i for i, x in solution.sample.items() if x == 1]
 
-    selected_costs = []
-    selected_weights = []
+    selected_values = list[int]()
+    selected_weights = list[int]()
 
     for i in selected_items:
-        selected_costs.append(costs[i])
+        selected_values.append(values[i])
         selected_weights.append(weights[i])
 
-    # print("items",selected_items)
-    # print("costs",selected_costs)
-    # print("weights",selected_weights)
+    total_value = sum(selected_values)
+    total_weight = sum(selected_weights)
+
+    print(f"items of solution: {selected_items}")
+    print(f"with total value:{total_value}")
+    print(f"with total weight:{total_weight}")
 
 
 def main():
 
+    # Set up argument parser
     parser = argparse.ArgumentParser(
         description = "Arguments for building Knapsack problem."
     )
@@ -133,25 +138,48 @@ def main():
         "--f",
         type = str,
         default = "data/small.txt",
-        help = "path of the file with the items values and weights."
+        help = "Path to the file containing item values and weights (default: data/small.txt)."
     )
     parser.add_argument(
         "--c",
         type = int,
         required = False,
         help = "the maximum weight that you can carry with the knapsack."
+        +"If not provided, it will be calculated as 75%% of the total weight."
     )
     args = parser.parse_args()
 
-    costs, weights, capacity = read_data(filename = args.f, capacity = args.c)
-    bqm = build_knapsack_bqm(costs, weights, capacity)
-    
-    #sampler = dimod.SimulatedAnnealingSampler()
-    #sampler = neal.sampler.SimulatedAnnealingSampler()
-    sampler = dimod.ExactSolver()
+    # Set up logging
+    logging.basicConfig(level = logging.INFO, format = "%(message)s")
+    logger = logging.getLogger(__name__)
 
-    sampleset = sampler.sample(bqm)
-    show_solution(sampleset, costs, weights)
+    try:
+        # Read data from the file
+        logger.info(f"Reading data from file: {args.f}")
+        values, weights, capacity = read_data(filename = args.f, capacity = args.c)
+        logger.info(f"Number of items: {len(values)}")
+        logger.info(f"Total possible weight: {sum(weights)}")
+        logger.info(f"Using capacity: {capacity}")
+
+        # Build the Binary Quadratic Model (BQM)
+        logger.info("Building the Binary Quadratic Model (BQM)...")
+        bqm = build_knapsack_bqm(values, weights, capacity)
+
+        # Solve the problem using Simulated Annealing
+        logger.info("Solving the problem using Simulated Annealing...")
+        sampler = neal.SimulatedAnnealingSampler()
+        sampleset = sampler.sample(bqm, num_reads = 25)
+
+        # Present the answer.
+        logger.info("Solution:")
+        show_solution(sampleset, values, weights)
+
+    except FileNotFoundError as e:
+        logger.error(f"Error: {e}")
+    except ValueError as e:
+        logger.error(f"Error: {e}")
+    except Exception as e:
+        logger.error(f"An unexpected error occurred: {e}")
 
 
 if __name__ == '__main__':
