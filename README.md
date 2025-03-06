@@ -11,16 +11,16 @@ maximum capacity of $W$. The goal is to select a subset of those items that
 are below or equal of the knapsack's capacity and at the same time maximize 
 the sum of values. 
 
-The problem can be also formed as a QUBO (quadratic unconstrained binary optimization) $ \min x^TQx$ as it seems below.
+The problem can be also formed as a QUBO (quadratic unconstrained binary optimization) $\min x^TQx$ as it seems below.
 
-Maximize the total value of selected items $ \sum u_i x_i $.
+Maximize the total value of selected items $\sum u_i x_i$.
 
 The total weight of selected items must not exceed the capacity 
-$ \sum w_i x_i \leq W$.
+$\sum w_i x_i \leq W$.
 
-We can combine them as: $ \min -\sum u_ix_i + P(\sum w_ix_i - W)^2 $
+We can combine them as: $\min -\sum u_ix_i + P(\sum w_ix_i - W)^2$
 
-It is equal to $ \min -\sum u_ix_i + P(\sum w_i^2x_i^2 + 2 \sum w_iw_jx_ix_j - 2W\sum w_ix_i + W^2) $
+It is equal to $\min -\sum u_ix_i + P(\sum w_i^2x_i^2 + 2 \sum w_iw_jx_ix_j - 2W\sum w_ix_i + W^2)$
 
 The constant term $PW^2$ can be ignored since it doesn't affect the optimization.
 

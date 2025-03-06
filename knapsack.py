@@ -1,3 +1,17 @@
+"""
+This module implements the 0/1 Knapsack problem solution.
+
+The Knapsack problem is a classic optimization problem where the goal is to 
+select a subset of items with maximum value, given a weight constraint.
+
+Functions:
+    - read_data:
+    - build_knapsack_bqm:
+    - show_solution:
+    - main:
+"""
+
+
 import dimod
 import neal.sampler
 
@@ -33,19 +47,22 @@ def read_data(
     values = list[int]()
     weights = list[int]()
 
-    # Fill the values and weights lists 
-    with open(filename, "r") as file:
+    # Fill the values and weights lists
+    with open(filename, "r", encoding="utf-8") as file:
         for line in file:
             parts = line.split()
             # Check if every item is well defined.
             if len(parts) != 2:
-                raise ValueError("Each line in the file must contain exactly two integers: value and weight.")
+                raise ValueError(
+                    ("Each line in the file must contain exactly "
+                     "two integers: value and weight.")
+                )
 
             value, weight = map(int, parts)
             values.append(value)
             weights.append(weight)
 
-    # In case capacity is not given, we define weight capacity to be equal 
+    # In case capacity is not given, we define weight capacity to be equal
     # to 75% of the total weight.
     if not capacity:
         capacity = int(0.75 * sum(weights))
@@ -70,7 +87,7 @@ def build_knapsack_bqm(
         BinaryQuadraticModel representing the 0/1 knapsack problem.
     """
 
-    Q = {}
+    q_matrix = {}
     n = len(weights)
 
     penalty_weight = int(10 * max(weights))
@@ -79,17 +96,17 @@ def build_knapsack_bqm(
         for j in range(i, n):
             if i == j:
                 # Diagonal terms: - v_i + P * w_i^2 - 2 * P * W * w_i
-                Q[(i, j)] = (
+                q_matrix[(i, j)] = (
                     - values[i]
                     + penalty_weight * (weights[i]**2)
                     - 2 * penalty_weight * capacity * weights[i]
                 )
             else:
                 # Off-diagonal terms: 2 * P * w_i * w_j
-                Q[(i, j)] = 2 * penalty_weight * weights[i] * weights[j]
+                q_matrix[(i, j)] = 2 * penalty_weight * weights[i] * weights[j]
 
-    bqm = dimod.BinaryQuadraticModel.from_qubo(Q)
-    
+    bqm = dimod.BinaryQuadraticModel.from_qubo(q_matrix)
+
     return bqm
 
 
@@ -110,7 +127,7 @@ def show_solution(
     samples = sampleset.aggregate()
     # keep the lowest energy sample as solution.
     solution = samples.first
-    # make a list with the answer's selected items 
+    # make a list with the answer's selected items
     selected_items = [i for i, x in solution.sample.items() if x == 1]
 
     selected_values = list[int]()
@@ -138,7 +155,10 @@ def main():
         "--f",
         type = str,
         default = "data/small.txt",
-        help = "Path to the file containing item values and weights (default: data/small.txt)."
+        help = (
+            "Path to the file containing item values and weights "
+            "(default: data/small.txt)."
+        )
     )
     parser.add_argument(
         "--c",
@@ -155,11 +175,13 @@ def main():
 
     try:
         # Read data from the file
-        logger.info(f"Reading data from file: {args.f}")
-        values, weights, capacity = read_data(filename = args.f, capacity = args.c)
-        logger.info(f"Number of items: {len(values)}")
-        logger.info(f"Total possible weight: {sum(weights)}")
-        logger.info(f"Using capacity: {capacity}")
+        logger.info("Reading data from file: %s", args.f)
+        values, weights, capacity = read_data(
+            filename = args.f, capacity = args.c
+        )
+        logger.info("Number of items: %d", len(values))
+        logger.info("Total possible weight: %d", sum(weights))
+        logger.info("Using capacity: %s", capacity)
 
         # Build the Binary Quadratic Model (BQM)
         logger.info("Building the Binary Quadratic Model (BQM)...")
@@ -174,13 +196,9 @@ def main():
         logger.info("Solution:")
         show_solution(sampleset, values, weights)
 
-    except FileNotFoundError as e:
-        logger.error(f"Error: {e}")
     except ValueError as e:
-        logger.error(f"Error: {e}")
-    except Exception as e:
-        logger.error(f"An unexpected error occurred: {e}")
+        logger.error("Error: %s", e)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()
