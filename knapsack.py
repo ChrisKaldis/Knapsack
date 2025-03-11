@@ -1,16 +1,43 @@
+#!/usr/bin/env python3
+
+# Copyright 2025 Christos Kaldis
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
 """
-This module implements the 0/1 Knapsack problem solution.
+This script solves the 0/1 Knapsack problem.
 
 The Knapsack problem is a classic optimization problem where the goal is to 
-select a subset of items with maximum value, given a weight constraint.
+select a subset of items with maximum value, given a weight constraint. It
+is described as a QUBO (quadratic unconstrained binary optimization) problem
+using `dimod` library and then `neal` library that implements Simulated
+Annealing in order to solve it. It is tested for small problems using Exact
+Solver. 
 
-Functions:
-    - read_data:
-    - build_knapsack_bqm:
-    - show_solution:
-    - main:
+Usage:
+    python knapsack.py --f data/very_small.txt --c 5
+
+Input File Format:
+    The input file should contain the value and weight of each item, separated 
+    by a space, with one item per line. For example:
+        4 5
+        3 4
+        3 3
+        2 2
+
+License:
+    Apache Linsence 2.0
 """
-
 
 import dimod
 import neal.sampler
@@ -21,13 +48,12 @@ import logging
 
 
 def read_data(
-        filename: str,
-        capacity: int | None = None
+        filename: str, capacity: int | None = None
     ) -> tuple[list[int], list[int], int]:
     """Reads data from a given file and calculates the capacity of knapsack.
 
     The file contains the value and the weight of each item in a different
-    line and they are splitted with space. 
+    line and they are splitted with space. Files have utf-8 encoding.
 
     Args:
         filename: the path of the file that contains the values and weights.
@@ -87,10 +113,11 @@ def build_knapsack_bqm(
         BinaryQuadraticModel representing the 0/1 knapsack problem.
     """
 
-    q_matrix = {}
+    q_matrix = dict()
+    # TODO: comment the two lines below.
     n = len(weights)
 
-    penalty_weight = int(10 * max(weights))
+    penalty_weight = int(sum(values)*capacity/sum(weights))
 
     for i in range(n):
         for j in range(i, n):
@@ -111,9 +138,7 @@ def build_knapsack_bqm(
 
 
 def show_solution(
-    sampleset: dimod.SampleSet,
-    values: list[int],
-    weights: list[int]
+    sampleset: dimod.SampleSet, values: list[int], weights: list[int]
     ) -> None:
     """It prints the selected items and infos about the answer.
 
@@ -136,6 +161,8 @@ def show_solution(
     for i in selected_items:
         selected_values.append(values[i])
         selected_weights.append(weights[i])
+
+    # TODO: check if the solution is valid.
 
     total_value = sum(selected_values)
     total_weight = sum(selected_weights)
@@ -177,7 +204,7 @@ def main():
         # Read data from the file
         logger.info("Reading data from file: %s", args.f)
         values, weights, capacity = read_data(
-            filename = args.f, capacity = args.c
+            filename=args.f, capacity=args.c
         )
         logger.info("Number of items: %d", len(values))
         logger.info("Total possible weight: %d", sum(weights))

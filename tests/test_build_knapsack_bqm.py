@@ -14,8 +14,7 @@ class TestBuildKnapsackBqm(unittest.TestCase):
         bqm = build_knapsack_bqm(values_f, weights_f, capacity)
 
         # This is equal to the penalty_weight inside the function.
-        # it is int(10 * max(weights_f)
-        p = 50
+        p = int(sum(values_f)*capacity/sum(weights_f))
 
         # Linear terms: -v_i + P * w_i^2 - 2 * P * W * w_i
         expected_linear_terms = {
