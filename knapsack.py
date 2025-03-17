@@ -25,7 +25,7 @@ Annealing in order to solve it. It is tested for small problems using Exact
 Solver. 
 
 Usage:
-    python knapsack.py --f data/very_small.txt --c 5
+    python knapsack.py -f data/very_small.txt -c 5
 
 Input File Format:
     The input file should contain the value and weight of each item, separated 
@@ -45,6 +45,44 @@ import neal.sampler
 import os
 import argparse
 import logging
+
+
+def parse_arguments() -> argparse.Namespace:
+    """Parses command-line arguments for the Knapsack problem.
+
+    Each problem has objects stored in file and a certain amount of capacity.
+
+    Returns: 
+        An argument parser Namespace.
+    """
+    # Set up argument parser.
+    parser = argparse.ArgumentParser(
+        description = "Arguments for building Knapsack problem."
+    )
+    # Add the path of the file with the data.
+    parser.add_argument(
+        "--file",
+        "-f",
+        type = str,
+        default = "data/small.txt",
+        help = (
+            "Path to the file containing item values and weights "
+            "(default: data/small.txt)."
+        )
+    )
+    # Define the capacity of knapsack.
+    parser.add_argument(
+        "--capacity",
+        "-c",
+        type = int,
+        required = False,
+        help = (
+        "the maximum weight that you can carry with the knapsack."
+        "If not provided, it will be calculated as 75%% of the total weight."
+        )
+    )
+
+    return parser.parse_args()
 
 
 def read_data(
@@ -140,7 +178,7 @@ def build_knapsack_bqm(
 def show_solution(
     sampleset: dimod.SampleSet, values: list[int], weights: list[int]
     ) -> None:
-    """It prints the selected items and infos about the answer.
+    """Prints the selected items and infos about the answer.
 
     Args:
         sampleset: Samples returned by a dimod sampler.
@@ -173,28 +211,8 @@ def show_solution(
 
 
 def main():
-
-    # Set up argument parser
-    parser = argparse.ArgumentParser(
-        description = "Arguments for building Knapsack problem."
-    )
-    parser.add_argument(
-        "--f",
-        type = str,
-        default = "data/small.txt",
-        help = (
-            "Path to the file containing item values and weights "
-            "(default: data/small.txt)."
-        )
-    )
-    parser.add_argument(
-        "--c",
-        type = int,
-        required = False,
-        help = "the maximum weight that you can carry with the knapsack."
-        +"If not provided, it will be calculated as 75%% of the total weight."
-    )
-    args = parser.parse_args()
+    # collect the command line input arguments.
+    args = parse_arguments()
 
     # Set up logging
     logging.basicConfig(level = logging.INFO, format = "%(message)s")
@@ -202,9 +220,9 @@ def main():
 
     try:
         # Read data from the file
-        logger.info("Reading data from file: %s", args.f)
+        logger.info("Reading data from file: %s", args.file)
         values, weights, capacity = read_data(
-            filename=args.f, capacity=args.c
+            filename=args.file, capacity=args.capacity
         )
         logger.info("Number of items: %d", len(values))
         logger.info("Total possible weight: %d", sum(weights))

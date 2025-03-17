@@ -31,11 +31,11 @@ The constant term $PW^2$ can be ignored since it doesn't affect the optimization
 
 The `knapsack.py` accepts the two command line arguments.
 
-1. `--f`: Path to the input file containing item values and weights (default: data/small.txt).
-2. `--c`: Maximum weight capacity of the knapsack. If not provided, it will be calculated as 75% of the total weight.
+1. `-f`: Path to the input file containing item values and weights (default: data/small.txt).
+2. `-c`: Maximum weight capacity of the knapsack. If not provided, it will be calculated as 75% of the total weight.
 
 ```
-$ python knapsack.py --f data/very_small.txt --c 10
+$ python knapsack.py -f data/very_small.txt -c 10
 ```
 
 The input file should contain the value and weight of each item, separated by a space, with one item per line. See the `very_small.txt` below:
@@ -76,14 +76,15 @@ with total weight:10
 
 ## Code Overview
 
-The `knapsack.py` has 4 functions.
+The `knapsack.py` has 5 functions.
 
-1. `read_data` that reads the data from a file.
-2. `build_knapsack_bqm` that creates the problem's binary quadratic model.
-3. `show_solution` that translates the answer into useful information.
-4. `main` presents how to use the functions above.
+1. `parse_arguments` parsing command-line arguments.
+2. `read_data` reads the data from a file.
+3. `build_knapsack_bqm` creates the problem's binary quadratic model.
+4. `show_solution` translates the answer into useful information.
+5. `main` presents how to use the functions above.
 
-There are also some `unittest` in the folder tests you can find and run them using the command:
+There are also some `unittest` in the folder tests you can find and run in order to follow the developement process using the command:
 
 ```
 $ python -m unittest discover -s tests
